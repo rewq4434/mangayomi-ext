@@ -14,7 +14,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.0",
+    version: "1.0.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -32,7 +32,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.0",
+    version: "1.0.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -50,7 +50,7 @@ const mangayomiSources = [
     isManga: false,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.0",
+    version: "1.0.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -269,7 +269,11 @@ class DefaultExtension extends MProvider {
 
     const chapters = episodes.map((e) => {
       const t = Date.parse(String(e.published_at || ""));
-      let name = String(e.title || "").trim() || `${e.number}화`;
+      // 제목에 화수가 없으면(예: "과거의 그때처럼. (4)") 앱이 괄호 숫자를 회차 번호로 읽으므로 앞에 화수를 붙입니다.
+      const title = String(e.title || "").trim();
+      const num = Number(e.number);
+      const hasNum = Number.isFinite(num) && new RegExp(`(^|\\D)${num}\\s*화`).test(title);
+      let name = !Number.isFinite(num) ? title : !title ? `${num}화` : hasNum ? title : `${num}화 - ${title}`;
       if (e.show_status && e.show_status !== "표시가능") name += ` (${e.show_status})`;
       return {
         name,
