@@ -1,11 +1,11 @@
-// 북코 (014.bookkor.com) - 웹소설
+// 북코 (015.bookkor.com) - 웹소설
 // 사이트는 Laravel + Inertia.js로 되어 있어 페이지 데이터(JSON)를 X-Inertia 헤더로 바로 받아옵니다.
 const mangayomiSources = [
   {
     id: 529174860,
     name: "북코 소설",
     lang: "ko",
-    baseUrl: "https://014.bookkor.com",
+    baseUrl: "https://015.bookkor.com",
     apiUrl: "",
     iconUrl: "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/icon/bookkor.png",
     typeSource: "single",
@@ -13,7 +13,7 @@ const mangayomiSources = [
     isManga: false,
     isNsfw: false,
     hasCloudflare: false,
-    version: "1.0.0",
+    version: "1.0.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/novel/bookkor.js",
@@ -91,7 +91,7 @@ class DefaultExtension extends MProvider {
           summary: "도메인 숫자가 바뀌면 새 주소를 입력하세요. 비우면 기본 주소를 사용합니다.",
           value: "",
           dialogTitle: "사이트 주소",
-          dialogMessage: "예: https://014.bookkor.com",
+          dialogMessage: "예: https://015.bookkor.com",
         },
       },
     ];

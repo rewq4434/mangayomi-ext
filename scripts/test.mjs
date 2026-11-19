@@ -11,7 +11,12 @@ if (!file) {
 class Client {
   async request(method, url, headers = {}, body) {
     const res = await fetch(url, { method, headers, body, redirect: "follow" });
-    return { statusCode: res.status, body: await res.text(), headers: Object.fromEntries(res.headers) };
+    // 망가요미(Dart http)처럼 charset이 없으면 latin1로 디코드 (JSON은 utf-8)
+    const ct = res.headers.get("content-type") || "";
+    const cs = /charset=([^;]+)/i.exec(ct)?.[1]?.trim().toLowerCase();
+    const enc = cs ? (cs === "utf-8" || cs === "utf8" ? "utf-8" : cs) : /json/i.test(ct) ? "utf-8" : "latin1";
+    const buf = Buffer.from(await res.arrayBuffer());
+    return { statusCode: res.status, body: buf.toString(enc === "utf-8" ? "utf8" : "latin1"), headers: Object.fromEntries(res.headers) };
   }
   get(url, headers) {
     return this.request("GET", url, headers);
