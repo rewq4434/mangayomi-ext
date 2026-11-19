@@ -14,7 +14,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.2",
+    version: "1.0.3",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -32,7 +32,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.2",
+    version: "1.0.3",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -50,7 +50,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.2",
+    version: "1.0.3",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -68,7 +68,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.2",
+    version: "1.0.3",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -304,7 +304,17 @@ class DefaultExtension extends MProvider {
     return this._indexVersion;
   }
 
+  // 인덱스 노드는 버전이 같으면 바뀌지 않으므로 기억해 둡니다 (위쪽 노드는 검색마다 재사용됨).
   async node(version, address) {
+    const cache = this.lru("_nodeCache", 400);
+    const key = version + ":" + address;
+    if (cache.has(key)) return cache.get(key);
+    const node = await this.fetchNode(version, address);
+    if (node) cache.set(key, node);
+    return node;
+  }
+
+  async fetchNode(version, address) {
     const res = await this.get(`${HT_LTN}/galleriesindex/galleries.${version}.index`, [
       address,
       address + HT_MAX_NODE_SIZE - 1,
@@ -336,6 +346,15 @@ class DefaultExtension extends MProvider {
   }
 
   async textSearch(term) {
+    const cache = this.lru("_termCache", 50);
+    const hit = cache.get(term);
+    if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.ids;
+    const ids = await this.textSearchRaw(term);
+    cache.set(term, { ids, at: Date.now() });
+    return ids;
+  }
+
+  async textSearchRaw(term) {
     const version = await this.indexVersion();
     const key = htSha256(term).slice(0, 4);
     const cmp = (a, b) => {
@@ -399,34 +418,55 @@ class DefaultExtension extends MProvider {
       if (t.startsWith("-") && t.length > 1) negative.push(t.slice(1));
       else positive.push(t);
     }
-    if (state.language !== "all" && !positive.some((t) => t.startsWith("language:"))) {
-      positive.push("language:" + state.language);
-    }
+    // 태그·작가 등(:가 있는 항목)의 .nozomi는 이미 언어별 파일이라 언어 목록을 따로 받을 필요가 없습니다.
+    const hasNozomiTerm = positive.some((t) => t.includes(":"));
+    if (state.language !== "all" && !hasNozomiTerm) positive.push("language:" + state.language);
     positive.sort((a, b) => (a.includes(":") === b.includes(":") ? 0 : a.includes(":") ? -1 : 1));
 
-    let results;
-    if (!positive.length || (!positive[0].includes(":") && state.orderbykey !== "added")) {
-      results = (await this.nozomi(state)).ids;
-    } else {
-      results = await this.idsForTerm(positive.shift(), state);
-    }
-    const pos = await Promise.all(positive.map((t) => this.idsForTerm(t, state)));
-    for (const ids of pos) {
+    // 기준 목록과 모든 검색어를 한꺼번에 요청합니다.
+    const useBase = !positive.length || (!positive[0].includes(":") && state.orderbykey !== "added");
+    const [base, pos, neg] = await Promise.all([
+      useBase ? this.nozomi(state).then((r) => r.ids) : null,
+      Promise.all(positive.map((t) => this.idsForTerm(t, state))),
+      Promise.all(negative.map((t) => this.idsForTerm(t, state))),
+    ]);
+
+    let results = useBase ? base : pos.shift();
+    // 작은 결과부터 걸러서 빠르게
+    for (const ids of pos.sort((a, b) => a.length - b.length)) {
+      if (!results.length) break;
       const set = new Set(ids);
       results = results.filter((id) => set.has(id));
     }
-    const neg = await Promise.all(negative.map((t) => this.idsForTerm(t, state)));
     for (const ids of neg) {
+      if (!results.length) break;
       const set = new Set(ids);
       results = results.filter((id) => !set.has(id));
     }
     if (state.random) {
+      results = results.slice();
       for (let i = results.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [results[i], results[j]] = [results[j], results[i]];
       }
     }
     return results;
+  }
+
+  lru(name, max) {
+    if (!this[name]) {
+      const map = new Map();
+      this[name] = {
+        has: (k) => map.has(k),
+        get: (k) => map.get(k),
+        set: (k, v) => {
+          map.delete(k);
+          map.set(k, v);
+          if (map.size > max) map.delete(map.keys().next().value);
+        },
+      };
+    }
+    return this[name];
   }
 
   filterValue(filters, type, def) {
@@ -511,6 +551,14 @@ class DefaultExtension extends MProvider {
 
   // ---------- 갤러리 정보 ----------
   async galleryInfo(id) {
+    const cache = this.lru("_galleryCache", 600);
+    if (cache.has(id)) return cache.get(id);
+    const info = await this.fetchGalleryInfo(id);
+    if (info) cache.set(id, info);
+    return info;
+  }
+
+  async fetchGalleryInfo(id) {
     const res = await this.get(`${HT_LTN}/galleries/${id}.js`);
     if (!res) return null;
     const body = String(res.body);
@@ -520,8 +568,10 @@ class DefaultExtension extends MProvider {
   }
 
   async galleries(ids) {
-    const gg = await this.gg();
-    const infos = await Promise.all(ids.map((id) => this.galleryInfo(id).catch(() => null)));
+    const [gg, infos] = await Promise.all([
+      this.gg(),
+      Promise.all(ids.map((id) => this.galleryInfo(id).catch(() => null))),
+    ]);
     return infos
       .filter((g) => g && g.id)
       .map((g) => ({
