@@ -14,7 +14,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.0",
+    version: "1.0.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -32,7 +32,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.0",
+    version: "1.0.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -50,7 +50,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.0",
+    version: "1.0.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -68,7 +68,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.0",
+    version: "1.0.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -222,7 +222,9 @@ class DefaultExtension extends MProvider {
   }
 
   async get(url, range = null) {
-    const headers = this.getHeaders();
+    // Range 요청에 gzip을 허용하면 서버가 "압축된 파일의 일부"를 보내서
+    // 망가요미(Dart)가 압축 해제에 실패합니다 (FormatException: Filter error, bad data).
+    const headers = { ...this.getHeaders(), "Accept-Encoding": "identity" };
     if (range) headers.Range = `bytes=${range[0]}-${range[1]}`;
     let last = null;
     for (let i = 0; i < 3; i++) {

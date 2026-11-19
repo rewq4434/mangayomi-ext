@@ -10,7 +10,13 @@ if (!file) {
 
 class Client {
   async request(method, url, headers = {}, body) {
-    const res = await fetch(url, { method, headers, body, redirect: "follow" });
+    // Dart http처럼 기본으로 gzip을 요청하고, gzip이면 직접 풀어서 깨진 데이터면 같은 오류를 냅니다.
+    const h = { ...(headers || {}) };
+    if (!Object.keys(h).some((k) => k.toLowerCase() === "accept-encoding")) h["Accept-Encoding"] = "gzip";
+    const raw = await fetch(url, { method, headers: h, body, redirect: "follow" });
+    const res = raw;
+    if (res.status === 206 && /gzip|br|deflate/i.test(res.headers.get("content-encoding") || ""))
+      throw new Error("FormatException: Filter error, bad data (압축된 파일 일부를 받음 — 망가요미에서 실패)");
     // 망가요미(Dart http)처럼 charset이 없으면 latin1로 디코드 (JSON은 utf-8)
     const ct = res.headers.get("content-type") || "";
     const cs = /charset=([^;]+)/i.exec(ct)?.[1]?.trim().toLowerCase();
