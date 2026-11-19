@@ -14,7 +14,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.1",
+    version: "1.0.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -32,7 +32,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.1",
+    version: "1.0.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -50,7 +50,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.1",
+    version: "1.0.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -68,7 +68,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.1",
+    version: "1.0.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/manga/hitomi.js",
@@ -80,7 +80,7 @@ const HT_UA =
   "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
 const HT_DOMAIN2 = "gold-usergeneratedcontent.net";
 const HT_LTN = "https://ltn." + HT_DOMAIN2;
-const HT_PAGE_SIZE = 25;
+const HT_PAGE_SIZE = 60; // 큰 화면(태블릿)에서도 스크롤이 생겨 자동으로 다음 페이지를 불러오도록 넉넉하게
 const HT_MAX_NODE_SIZE = 464;
 
 const HT_SORTS = [
@@ -222,10 +222,14 @@ class DefaultExtension extends MProvider {
   }
 
   async get(url, range = null) {
-    // Range 요청에 gzip을 허용하면 서버가 "압축된 파일의 일부"를 보내서
-    // 망가요미(Dart)가 압축 해제에 실패합니다 (FormatException: Filter error, bad data).
-    const headers = { ...this.getHeaders(), "Accept-Encoding": "identity" };
-    if (range) headers.Range = `bytes=${range[0]}-${range[1]}`;
+    const headers = { ...this.getHeaders() };
+    // Range는 압축되지 않는 galleriesindex(.index/.data)에만 씁니다.
+    // .nozomi에 Range를 쓰면 서버가 "gzip 파일의 일부"를 보내 앱이
+    // "FormatException: Filter error, bad data"로 실패하므로 .nozomi는 항상 통째로 받습니다.
+    if (range) {
+      headers.Range = `bytes=${range[0]}-${range[1]}`;
+      headers["Accept-Encoding"] = "identity";
+    }
     let last = null;
     for (let i = 0; i < 3; i++) {
       try {
@@ -251,12 +255,18 @@ class DefaultExtension extends MProvider {
     return `${HT_LTN}/n/${state.area}/${encodeURIComponent(state.tag)}-${lang}.nozomi`;
   }
 
-  async nozomi(state, range = null) {
-    const res = await this.get(this.nozomiUrl(state), range);
-    if (!res) return { ids: [], total: 0 };
-    const ids = htIds(htBytes(res.body));
-    const cr = /\/(\d+)/.exec(String(res.headers?.["content-range"] || res.headers?.["Content-Range"] || ""));
-    return { ids, total: cr ? Number(cr[1]) / 4 : null };
+  // .nozomi 전체를 받아 id 배열로 만들고 5분간 기억합니다 (한국어 목록 약 260KB, gzip).
+  async nozomi(state) {
+    const url = this.nozomiUrl(state);
+    const cache = (this._nozomiCache = this._nozomiCache || {});
+    const hit = cache[url];
+    if (hit && Date.now() - hit.at < 5 * 60 * 1000) return { ids: hit.ids };
+    const res = await this.get(url);
+    const ids = res ? htIds(htBytes(res.body)) : [];
+    const keys = Object.keys(cache);
+    if (keys.length >= 8) delete cache[keys[0]];
+    cache[url] = { ids, at: Date.now() };
+    return { ids };
   }
 
   baseState(sort) {
@@ -270,12 +280,11 @@ class DefaultExtension extends MProvider {
     return state;
   }
 
-  // 검색 없이 목록: Range 요청으로 필요한 25개만 받습니다.
+  // 검색 없이 목록
   async pagedList(page, sort) {
-    const start = (page - 1) * HT_PAGE_SIZE * 4;
-    const { ids, total } = await this.nozomi(this.baseState(sort), [start, start + HT_PAGE_SIZE * 4 - 1]);
-    const hasNext = total != null ? start + ids.length * 4 < total * 4 : ids.length >= HT_PAGE_SIZE;
-    return { list: await this.galleries(ids), hasNextPage: ids.length > 0 && hasNext };
+    const { ids } = await this.nozomi(this.baseState(sort));
+    const slice = ids.slice((page - 1) * HT_PAGE_SIZE, page * HT_PAGE_SIZE);
+    return { list: await this.galleries(slice), hasNextPage: slice.length > 0 && page * HT_PAGE_SIZE < ids.length };
   }
 
   getPopular(page) {

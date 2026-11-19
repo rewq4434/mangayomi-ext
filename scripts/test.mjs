@@ -11,8 +11,9 @@ if (!file) {
 class Client {
   async request(method, url, headers = {}, body) {
     // Dart http처럼 기본으로 gzip을 요청하고, gzip이면 직접 풀어서 깨진 데이터면 같은 오류를 냅니다.
-    const h = { ...(headers || {}) };
-    if (!Object.keys(h).some((k) => k.toLowerCase() === "accept-encoding")) h["Accept-Encoding"] = "gzip";
+    // 최악의 경우를 가정: 확장이 Accept-Encoding을 바꿔도 앱이 무시하고 gzip을 요청한다고 봅니다.
+    const h = Object.fromEntries(Object.entries(headers || {}).filter(([k]) => k.toLowerCase() !== "accept-encoding"));
+    h["Accept-Encoding"] = "gzip";
     const raw = await fetch(url, { method, headers: h, body, redirect: "follow" });
     const res = raw;
     if (res.status === 206 && /gzip|br|deflate/i.test(res.headers.get("content-encoding") || ""))

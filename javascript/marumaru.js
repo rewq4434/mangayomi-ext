@@ -14,7 +14,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.1",
+    version: "1.0.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -32,7 +32,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.1",
+    version: "1.0.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -50,7 +50,7 @@ const mangayomiSources = [
     isManga: false,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.1",
+    version: "1.0.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -61,7 +61,7 @@ const mangayomiSources = [
 const MARU_UA =
   "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
 const MARU_READER = "https://api.storagewebtoon.store/api/v1/reader/A2";
-const MARU_LIST_SIZE = 40;
+const MARU_LIST_SIZE = 60; // 큰 화면에서도 스크롤이 생겨 자동으로 다음 페이지를 불러오도록
 const MARU_EP_SIZE = 100;
 
 const MARU_SORTS = [

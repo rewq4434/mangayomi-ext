@@ -13,7 +13,7 @@ const mangayomiSources = [
     isManga: false,
     isNsfw: false,
     hasCloudflare: false,
-    version: "1.0.1",
+    version: "1.0.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/novel/bookkor.js",
@@ -152,33 +152,46 @@ class DefaultExtension extends MProvider {
     return f.state ?? def;
   }
 
+  // 앱 한 페이지 = 사이트 2페이지(80개). 큰 화면에서도 스크롤이 생겨 자동으로 다음 페이지를 불러옵니다.
   async listing(page, keyword, filters, sort) {
     const menu = this.filterValue(filters, "menu", "");
     const genres = ((filters || []).find((f) => f.type === "genres")?.state || [])
       .filter((c) => c.state)
       .map((c) => c.value);
-    const query = bkQuery({
-      keyword: String(keyword || "").trim(),
-      genres,
-      sort: sort || this.filterValue(filters, "sort", "latest"),
-      page: String(page),
-    });
-    const path = (menu ? "/" + encodeURIComponent(menu) : "/") + "?" + query;
-    const data = await this.page(path, { component: "contents/Home", props: ["comics"] });
-    const comics = data.props.comics;
-    if (!Array.isArray(comics?.data)) throw new Error("소설 목록을 찾을 수 없습니다.");
+    const sitePage = async (p) => {
+      const query = bkQuery({
+        keyword: String(keyword || "").trim(),
+        genres,
+        sort: sort || this.filterValue(filters, "sort", "latest"),
+        page: String(p),
+      });
+      const path = (menu ? "/" + encodeURIComponent(menu) : "/") + "?" + query;
+      const data = await this.page(path, { component: "contents/Home", props: ["comics"] });
+      const comics = data.props.comics;
+      if (!Array.isArray(comics?.data)) throw new Error("소설 목록을 찾을 수 없습니다.");
+      return comics;
+    };
+
+    const first = await sitePage(page * 2 - 1);
+    const last = Number(first.last_page) || 1;
+    const pages = [first];
+    if (page * 2 <= last) pages.push(await sitePage(page * 2));
+
     const seen = new Set();
     const list = [];
-    for (const c of comics.data) {
-      if (!c?.slug || seen.has(c.slug)) continue;
-      seen.add(c.slug);
-      list.push({
-        name: String(c.title || "").trim(),
-        link: "/" + encodeURIComponent(String(c.slug)),
-        imageUrl: this.cover(c.thumbnail),
-      });
+    for (const comics of pages) {
+      for (const c of comics.data) {
+        if (!c?.slug || seen.has(c.slug)) continue;
+        seen.add(c.slug);
+        list.push({
+          name: String(c.title || "").trim(),
+          link: "/" + encodeURIComponent(String(c.slug)),
+          imageUrl: this.cover(c.thumbnail),
+        });
+      }
     }
-    return { list, hasNextPage: list.length > 0 && Number(comics.current_page) < Number(comics.last_page) };
+    const lastFetched = Number(pages[pages.length - 1].current_page) || page * 2;
+    return { list, hasNextPage: list.length > 0 && lastFetched < last };
   }
 
   getPopular(page) {
