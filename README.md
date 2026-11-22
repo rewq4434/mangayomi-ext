@@ -16,13 +16,13 @@ https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/index.json
 
 | 이름 | 종류 | 사이트 | 파일 |
 |---|---|---|---|
-| 마루마루 웹툰 | 만화 | marumaru111.com | `javascript/marumaru.js` |
-| 마루마루 만화 | 만화 | marumaru111.com | `javascript/marumaru.js` |
-| 마루마루 소설 | 소설 | marumaru111.com | `javascript/marumaru.js` |
+| 마루마루 웹툰 | 만화 | marumaru112.com | `javascript/marumaru.js` |
+| 마루마루 만화 | 만화 | marumaru112.com | `javascript/marumaru.js` |
+| 마루마루 소설 | 소설 | marumaru112.com | `javascript/marumaru.js` |
 | 북코 소설 | 소설 | 015.bookkor.com | `javascript/novel/bookkor.js` |
 | Hitomi (한국어 / 日本語 / English / 전체 언어) | 만화 | hitomi.la | `javascript/manga/hitomi.js` |
 
-- 사이트 도메인 숫자가 바뀌면(예: marumaru112) 확장 설정 → **사이트 주소**에 새 주소를 넣으면 돼요.
+- 사이트 도메인 숫자가 바뀌면(예: marumaru113) 확장 설정 → **사이트 주소**에 새 주소를 넣으면 돼요.
 - Hitomi는 Tachiyomi/Mihon Hitomi 확장을 옮긴 거예요. 검색창에 hitomi 검색 문법(`female:big_breasts -netorare`)이나 갤러리 번호, 주소를 넣을 수 있어요. 필터에서 정렬, 종류, 태그, 작가, 그룹, 시리즈, 캐릭터를 고를 수 있어요.
 - 마루마루의 포인트 구매 회차는 열리지 않아요. 이때는 안내 메시지가 나와요.
 

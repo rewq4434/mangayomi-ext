@@ -1,4 +1,4 @@
-// 마루마루 (marumaru111.com) - 웹툰 / 만화 / 웹소설
+// 마루마루 (marumaru112.com) - 웹툰 / 만화 / 웹소설
 // 사이트는 React SPA이고, 목록은 사이트의 /api, 회차와 본문은 storagewebtoon.store 리더 API에서 가져옵니다.
 // 한 파일로 3개의 소스(웹툰, 만화, 소설)를 제공하며 additionalParams의 media 값으로 구분합니다.
 const mangayomiSources = [
@@ -6,7 +6,7 @@ const mangayomiSources = [
     id: 718203541,
     name: "마루마루 웹툰",
     lang: "ko",
-    baseUrl: "https://marumaru111.com",
+    baseUrl: "https://marumaru112.com",
     apiUrl: "",
     iconUrl: "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/icon/marumaru.png",
     typeSource: "single",
@@ -14,7 +14,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.2",
+    version: "1.0.3",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -24,7 +24,7 @@ const mangayomiSources = [
     id: 718203542,
     name: "마루마루 만화",
     lang: "ko",
-    baseUrl: "https://marumaru111.com",
+    baseUrl: "https://marumaru112.com",
     apiUrl: "",
     iconUrl: "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/icon/marumaru.png",
     typeSource: "single",
@@ -32,7 +32,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.2",
+    version: "1.0.3",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -42,7 +42,7 @@ const mangayomiSources = [
     id: 718203543,
     name: "마루마루 소설",
     lang: "ko",
-    baseUrl: "https://marumaru111.com",
+    baseUrl: "https://marumaru112.com",
     apiUrl: "",
     iconUrl: "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/icon/marumaru.png",
     typeSource: "single",
@@ -50,7 +50,7 @@ const mangayomiSources = [
     isManga: false,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.2",
+    version: "1.0.3",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -60,7 +60,8 @@ const mangayomiSources = [
 
 const MARU_UA =
   "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
-const MARU_READER = "https://api.storagewebtoon.store/api/v1/reader/A2";
+const MARU_API = "https://api.storagewebtoon.store";
+const MARU_READER = MARU_API + "/api/v1/reader/A2";
 const MARU_LIST_SIZE = 60; // 큰 화면에서도 스크롤이 생겨 자동으로 다음 페이지를 불러오도록
 const MARU_EP_SIZE = 100;
 
@@ -137,10 +138,20 @@ class DefaultExtension extends MProvider {
           summary: "도메인이 바뀌면 새 주소를 입력하세요. 비우면 기본 주소를 사용합니다.",
           value: "",
           dialogTitle: "사이트 주소",
-          dialogMessage: "예: https://marumaru111.com",
+          dialogMessage: "예: https://marumaru112.com",
         },
       },
     ];
+  }
+
+  // 목록·검색·상세는 사이트의 데이터 서버(api.storagewebtoon.store)를 직접 부릅니다.
+  // 마루마루 도메인 숫자가 바뀌어도(111 → 112 …) 영향을 받지 않고, 실패하면 사이트 주소로 한 번 더 시도합니다.
+  async api(path) {
+    try {
+      return await this.json(MARU_API + path);
+    } catch (e) {
+      return await this.json(this.baseUrl + path);
+    }
   }
 
   async json(url) {
@@ -182,7 +193,7 @@ class DefaultExtension extends MProvider {
     q.set("page", String(page - 1));
     q.set("size", String(MARU_LIST_SIZE));
     for (const [k, v] of Object.entries(extra)) if (v) q.set(k, v);
-    const data = await this.json(this.baseUrl + "/api/works?" + q.toString());
+    const data = await this.api("/api/works?" + q.toString());
     return this.listResult(data, page, MARU_LIST_SIZE);
   }
 
@@ -220,8 +231,12 @@ class DefaultExtension extends MProvider {
     q.set("media", this.media);
     q.set("sort", sort);
     if (status) q.set("status", status);
-    const data = await this.json(this.baseUrl + "/api/search?" + q.toString());
-    return this.listResult(data, page, Number(data?.size) || 70);
+    const data = await this.api("/api/search?" + q.toString());
+    const res = this.listResult(data, page, Number(data?.size) || 70);
+    // 검색 API가 media 필터를 무시하고 모든 종류를 섞어 주므로 이 소스의 종류만 남깁니다.
+    const keep = new Set((data?.items || []).filter((w) => w && w.mediaType === this.media).map((w) => "/works/" + w.id));
+    res.list = res.list.filter((x) => keep.has(x.link));
+    return res;
   }
 
   getFilterList() {
@@ -245,7 +260,7 @@ class DefaultExtension extends MProvider {
 
   async getDetail(url) {
     const id = this.workId(url);
-    const detail = await this.json(this.baseUrl + "/api/works/" + id);
+    const detail = await this.api("/api/works/" + id);
     const w = detail?.work;
     if (!w) throw new Error("작품 정보를 찾을 수 없습니다.");
 
