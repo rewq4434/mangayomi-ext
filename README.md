@@ -10,7 +10,7 @@
 https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/index.json
 ```
 
-만화 확장과 소설 확장은 앱에서 **탭이 따로** 있어요. 만화 탭과 소설 탭 양쪽에 같은 주소를 넣으면 각 탭에 맞는 확장이 보여요.
+만화 확장과 소설 확장은 앱에서 **탭이 따로** 있어요. 만화 탭, 애니 탭, 소설 탭에 같은 주소를 넣으면 각 탭에 맞는 확장이 보여요.
 
 ## 포함된 확장
 
@@ -21,6 +21,7 @@ https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/index.json
 | 마루마루 소설 | 소설 | marumaru112.com | `javascript/marumaru.js` |
 | 북코 소설 | 소설 | 015.bookkor.com | `javascript/novel/bookkor.js` |
 | Hitomi (한국어 / 日本語 / English / 전체 언어) | 만화 | hitomi.la | `javascript/manga/hitomi.js` |
+| 123AV | 애니(동영상) | 123av.com | `javascript/anime/123av.js` |
 
 - 사이트 도메인 숫자가 바뀌면(예: marumaru113) 확장 설정 → **사이트 주소**에 새 주소를 넣으면 돼요.
 - Hitomi는 Tachiyomi/Mihon Hitomi 확장을 옮긴 거예요. 검색창에 hitomi 검색 문법(`female:big_breasts -netorare`)이나 갤러리 번호, 주소를 넣을 수 있어요. 필터에서 정렬, 종류, 태그, 작가, 그룹, 시리즈, 캐릭터를 고를 수 있어요.

@@ -1,5 +1,25 @@
 [
   {
+    "itemType": 1,
+    "isManga": false,
+    "typeSource": "single",
+    "sourceCodeLanguage": 1,
+    "appMinVerReq": "0.5.0",
+    "hasCloudflare": false,
+    "isFullData": false,
+    "dateFormat": "",
+    "dateFormatLocale": "",
+    "id": 480939976,
+    "name": "123AV",
+    "lang": "ko",
+    "baseUrl": "https://123av.com",
+    "apiUrl": "",
+    "version": "0.0.1",
+    "isNsfw": true,
+    "sourceCodeUrl": "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/javascript/anime/123av.js",
+    "iconUrl": "https://123av.com/assets/123av/logo-square.png"
+  },
+  {
     "itemType": 0,
     "isManga": true,
     "typeSource": "single",
