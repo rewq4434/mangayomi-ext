@@ -20,6 +20,26 @@
     "iconUrl": "https://123av.com/assets/123av/logo-square.png"
   },
   {
+    "itemType": 1,
+    "isManga": false,
+    "typeSource": "single",
+    "sourceCodeLanguage": 1,
+    "appMinVerReq": "0.5.0",
+    "hasCloudflare": false,
+    "isFullData": false,
+    "dateFormat": "",
+    "dateFormatLocale": "",
+    "id": 640218537,
+    "name": "티비몬",
+    "lang": "ko",
+    "baseUrl": "https://tvmon1.com",
+    "apiUrl": "",
+    "version": "1.0.0",
+    "isNsfw": false,
+    "sourceCodeUrl": "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/javascript/anime/tvmon.js",
+    "iconUrl": "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/icon/tvmon.png"
+  },
+  {
     "itemType": 0,
     "isManga": true,
     "typeSource": "single",
