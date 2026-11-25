@@ -14,7 +14,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.3",
+    version: "1.0.4",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -32,7 +32,7 @@ const mangayomiSources = [
     isManga: true,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.3",
+    version: "1.0.4",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -50,7 +50,7 @@ const mangayomiSources = [
     isManga: false,
     isNsfw: true,
     hasCloudflare: false,
-    version: "1.0.3",
+    version: "1.0.4",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/marumaru.js",
@@ -282,6 +282,8 @@ class DefaultExtension extends MProvider {
     }
     const episodes = [...seen.values()].sort((a, b) => (Number(b.number) || 0) - (Number(a.number) || 0));
 
+    const paidIds = await this.findPaidEpisodes(episodes);
+
     const chapters = episodes.map((e) => {
       const t = Date.parse(String(e.published_at || ""));
       // 제목에 화수가 없으면(예: "과거의 그때처럼. (4)") 앱이 괄호 숫자를 회차 번호로 읽으므로 앞에 화수를 붙입니다.
@@ -290,11 +292,13 @@ class DefaultExtension extends MProvider {
       const hasNum = Number.isFinite(num) && new RegExp(`(^|\\D)${num}\\s*화`).test(title);
       let name = !Number.isFinite(num) ? title : !title ? `${num}화` : hasNum ? title : `${num}화 - ${title}`;
       if (e.show_status && e.show_status !== "표시가능") name += ` (${e.show_status})`;
+      const paid = paidIds.has(e.id);
+      if (paid) name = "🔒 " + name;
       return {
         name,
         url: "/episodes/" + e.id,
         dateUpload: Number.isFinite(t) ? String(t) : null,
-        scanlator: null,
+        scanlator: paid ? "포인트 구매 회차" : null,
       };
     });
 
@@ -316,6 +320,33 @@ class DefaultExtension extends MProvider {
       status: w.status === "COMPLETED" ? 1 : 0,
       chapters,
     };
+  }
+
+  // 회차 목록에는 유료 여부가 없어서 본문을 열어 봐야 알 수 있습니다.
+  // 포인트 회차는 최신 1~3화에 몰려 있으므로, 최신 회차부터 5개씩 확인하다가
+  // 유료 회차가 하나도 없는 묶음이 나오면 멈춥니다 (보통 추가 요청 5개, 최대 30개).
+  async findPaidEpisodes(episodes) {
+    const paid = new Set();
+    const BATCH = 5;
+    for (let i = 0; i < Math.min(episodes.length, 30); i += BATCH) {
+      const batch = episodes.slice(i, i + BATCH);
+      const results = await Promise.all(
+        batch.map((e) =>
+          this.json(`${MARU_READER}/episodes/${e.id}`)
+            .then((d) => (d?.item?.body || []).some((b) => b && b.kind === "paid"))
+            .catch(() => false),
+        ),
+      );
+      let found = false;
+      results.forEach((isPaid, k) => {
+        if (isPaid) {
+          paid.add(batch[k].id);
+          found = true;
+        }
+      });
+      if (!found) break;
+    }
+    return paid;
   }
 
   async episodeBody(url) {
