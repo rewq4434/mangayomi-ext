@@ -15,7 +15,7 @@ const mangayomiSources = [
     isManga: false,
     isNsfw: true,
     hasCloudflare: true,
-    version: "0.1.1",
+    version: "0.1.2",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/anime/avsee.js",
@@ -64,8 +64,15 @@ class DefaultExtension extends MProvider {
     return AVS_BOARDS.some(([k]) => k === v) ? v : "javm";
   }
 
+  // 통신 방식: 기본은 Dart 클라이언트(Chrome과 같은 BoringSSL).
+  // 앱 기본(rhttp)은 Cloudflare가 봇으로 판단해 웹뷰 통과 쿠키가 있어도 막는 경우가 있습니다.
+  get useDartClient() {
+    const v = this.prefs.get("use_dart_client");
+    return v === undefined || v === null || v === "" ? true : v === true || v === "true";
+  }
+
   get client() {
-    return this._client || (this._client = new Client());
+    return this._client || (this._client = new Client(this.useDartClient ? { useDartHttpClient: true } : undefined));
   }
 
   getHeaders(url) {
@@ -84,6 +91,14 @@ class DefaultExtension extends MProvider {
           value: "",
           dialogTitle: "사이트 주소",
           dialogMessage: "예: https://05.avsee.is",
+        },
+      },
+      {
+        key: "use_dart_client",
+        switchPreferenceCompat: {
+          title: "Dart 통신 방식 사용",
+          summary: "Cloudflare 오류가 계속 나면 이 설정을 바꿔 보세요 (켬: Dart, 끔: 앱 기본). 바꾼 뒤 앱을 다시 시작하세요.",
+          value: true,
         },
       },
       {
