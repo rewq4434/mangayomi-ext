@@ -15,15 +15,13 @@ const mangayomiSources = [
     isManga: false,
     isNsfw: true,
     hasCloudflare: true,
-    version: "0.1.0",
+    version: "0.1.1",
     dateFormat: "",
     dateFormatLocale: "",
     pkgPath: "javascript/anime/avsee.js",
   },
 ];
 
-const AVS_UA =
-  "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
 
 // 영상 게시판 (메뉴 기준)
 const AVS_BOARDS = [
@@ -71,7 +69,9 @@ class DefaultExtension extends MProvider {
   }
 
   getHeaders(url) {
-    return { "User-Agent": AVS_UA, Referer: this.baseUrl + "/" };
+    // User-Agent는 넣지 않습니다. Cloudflare 통과 쿠키(cf_clearance)는 웹뷰의 User-Agent에 묶여 있고,
+    // 망가요미는 요청에 User-Agent가 없을 때만 웹뷰의 User-Agent를 넣어 주기 때문입니다.
+    return { Referer: this.baseUrl + "/" };
   }
 
   getSourcePreferences() {
@@ -363,7 +363,7 @@ class DefaultExtension extends MProvider {
         url: u,
         originalUrl: u,
         quality,
-        headers: { "User-Agent": AVS_UA, Referer: referer, Origin: origin },
+        headers: { Referer: referer, Origin: origin },
       });
     };
     const scan = (text, referer) => {
@@ -374,7 +374,7 @@ class DefaultExtension extends MProvider {
     scan(html, this.baseUrl + path);
     for (const src of frames) {
       try {
-        const res = await this.client.get(src, { "User-Agent": AVS_UA, Referer: this.baseUrl + "/" });
+        const res = await this.client.get(src, { Referer: this.baseUrl + "/" });
         scan(res.body, src);
       } catch (e) {}
     }

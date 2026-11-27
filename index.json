@@ -34,7 +34,7 @@
     "lang": "ko",
     "baseUrl": "https://05.avsee.is",
     "apiUrl": "",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "isNsfw": true,
     "sourceCodeUrl": "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/javascript/anime/avsee.js",
     "iconUrl": "https://raw.githubusercontent.com/rewq4434/mangayomi-ext/main/icon/avsee.png"
